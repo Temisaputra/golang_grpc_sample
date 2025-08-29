@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Temisaputra/warOnk/delivery/repository"
 	"github.com/Temisaputra/warOnk/internal/domain/entity"
 	"github.com/Temisaputra/warOnk/internal/infrastructure/config"
+	"github.com/Temisaputra/warOnk/internal/repository"
 	"github.com/Temisaputra/warOnk/pkg/helper"
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
@@ -53,7 +53,7 @@ func NewJwtService(cfg config.Config, log zap.Logger, userRepo repository.UserRe
 
 // Claims custom untuk JWT
 type Claims struct {
-	UserID   int    `json:"user_id"`
+	UserID   int32  `json:"user_id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Role     string `json:"role"`

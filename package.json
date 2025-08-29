@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "webpack": "^5.101.3",
+    "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {
+    "google-protobuf": "^4.0.0",
+    "grpc-web": "^2.0.0"
+  }
+}

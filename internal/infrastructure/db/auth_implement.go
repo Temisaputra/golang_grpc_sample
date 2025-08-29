@@ -3,8 +3,8 @@ package db
 import (
 	"context"
 
-	irepository "github.com/Temisaputra/warOnk/delivery/repository"
 	"github.com/Temisaputra/warOnk/internal/domain/entity"
+	irepository "github.com/Temisaputra/warOnk/internal/repository"
 	"gorm.io/gorm"
 )
 

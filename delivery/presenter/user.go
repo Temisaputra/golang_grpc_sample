@@ -8,7 +8,7 @@ type UserRequest struct {
 }
 
 type UserResponse struct {
-	ID    int    `json:"id"`
+	ID    int32  `json:"id"`
 	Email string `json:"email"`
 	Name  string `json:"name"`
 	Role  string `json:"role"`

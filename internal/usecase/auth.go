@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/Temisaputra/warOnk/delivery/presenter"
-	"github.com/Temisaputra/warOnk/delivery/repository"
 	"github.com/Temisaputra/warOnk/internal/domain/entity"
+	"github.com/Temisaputra/warOnk/internal/repository"
 	"github.com/Temisaputra/warOnk/pkg/auth"
 	"golang.org/x/crypto/bcrypt"
 )

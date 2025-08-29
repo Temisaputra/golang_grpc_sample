@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package common;
+
+option go_package = "/pb/common;common";
+
+// Metadata untuk pagination
+message Meta {
+  int32 total_data = 1;
+  int32 total_page = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+// Generic Response
+message Response {
+  string message = 1; // biasanya isi "success" atau "failed"
+  Meta meta = 2;
+}

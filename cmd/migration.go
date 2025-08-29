@@ -65,7 +65,7 @@ func startMigrate(migrationType string) {
 	}
 }
 
-func init() {
-	migrateCmd.AddCommand(migrateUpCmd, migrateDownCmd, migrateFreshCmd)
-	rootCmd.AddCommand(migrateCmd)
-}
+// func init() {
+// 	migrateCmd.AddCommand(migrateUpCmd, migrateDownCmd, migrateFreshCmd)
+// 	rootCmd.AddCommand(migrateCmd)
+// }

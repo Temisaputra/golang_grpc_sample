@@ -15,6 +15,6 @@ func Execute() error {
 
 func init() {
 	// register subcommands
-	rootCmd.AddCommand(restCmd)
+	rootCmd.AddCommand(grpcCmd)
 	rootCmd.AddCommand(migrateCmd)
 }

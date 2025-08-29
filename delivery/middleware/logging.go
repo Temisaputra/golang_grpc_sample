@@ -2,56 +2,56 @@ package middleware
 
 import (
 	"context"
-	"net/http"
 	"time"
 
 	"github.com/Temisaputra/warOnk/internal/infrastructure/config"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 )
 
-func LoggingMiddleware(logger *zap.Logger, config *config.Config) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			start := time.Now()
+func GRPCLoggingInterceptor(logger *zap.Logger, cfg *config.Config) grpc.UnaryServerInterceptor {
+	return func(
+		ctx context.Context,
+		req interface{},
+		info *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler,
+	) (interface{}, error) {
+		start := time.Now()
+		requestID := uuid.New().String()
 
-			rw := &statusResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
-			requestID := uuid.New().String()
-			r = r.WithContext(context.WithValue(r.Context(), "request_id", requestID))
+		// Simpan requestID di context
+		ctx = context.WithValue(ctx, "request_id", requestID)
 
-			next.ServeHTTP(rw, r)
+		// Eksekusi handler
+		resp, err := handler(ctx, req)
 
-			latency := time.Since(start)
+		latency := time.Since(start)
+		st, _ := status.FromError(err)
 
-			fields := []zap.Field{
-				zap.String("request_id", requestID),
-				zap.String("method", r.Method),
-				zap.String("path", r.URL.Path),
-				zap.Int("status_code", rw.statusCode),
-				zap.Duration("latency", latency),
-				zap.String("client_ip", r.RemoteAddr),
-				zap.String("service", config.AppName),
-				zap.String("env", config.Env),
-			}
+		fields := []zap.Field{
+			zap.String("request_id", requestID),
+			zap.String("method", info.FullMethod),
+			zap.String("service", cfg.AppName),
+			zap.String("env", cfg.Env),
+			zap.Duration("latency", latency),
+			zap.String("status", st.Code().String()),
+		}
 
-			switch {
-			case rw.statusCode >= 500:
-				logger.Error("server error", fields...)
-			case rw.statusCode >= 400:
-				logger.Warn("client error", fields...)
-			default:
-				logger.Info("request handled", fields...)
-			}
-		})
+		if err != nil {
+			fields = append(fields, zap.Error(err))
+		}
+
+		switch {
+		case st.Code().String() == "Internal":
+			logger.Error("gRPC server error", fields...)
+		case st.Code().String() == "NotFound":
+			logger.Warn("gRPC client error", fields...)
+		default:
+			logger.Info("gRPC request handled", fields...)
+		}
+
+		return resp, err
 	}
-}
-
-type statusResponseWriter struct {
-	http.ResponseWriter
-	statusCode int
-}
-
-func (w *statusResponseWriter) WriteHeader(code int) {
-	w.statusCode = code
-	w.ResponseWriter.WriteHeader(code)
 }

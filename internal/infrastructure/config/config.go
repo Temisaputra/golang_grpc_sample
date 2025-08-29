@@ -19,6 +19,7 @@ type Config struct {
 	JWTExpiration     string `envconfig:"JWT_EXPIRATION" default:"1h"`
 	DisableStacktrace bool   `envconfig:"DISABLE_STACKTRACE" default:"false"`
 	Env               string `envconfig:"ENV" default:"development"`
+	GRPCPort          string `envconfig:"GRPC_PORT" default:"50051"`
 }
 
 func Get() *Config {

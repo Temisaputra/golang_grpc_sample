@@ -4,8 +4,10 @@ import (
 	"context"
 
 	"github.com/Temisaputra/warOnk/delivery/presenter"
-	irepository "github.com/Temisaputra/warOnk/delivery/repository"
 	"github.com/Temisaputra/warOnk/internal/domain/entity"
+	irepository "github.com/Temisaputra/warOnk/internal/repository"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
 )
 
@@ -58,4 +60,16 @@ func (r *UserRepository) DeleteUser(ctx context.Context, id int) error {
 		return err
 	}
 	return nil
+}
+
+func (r *UserRepository) GetUserById(ctx context.Context, id int32) (presenter.UserResponse, error) {
+	var user entity.Users
+	err := r.Conn(ctx).WithContext(ctx).Where("id = ?", id).First(&user).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return presenter.UserResponse{}, status.Errorf(codes.NotFound, "user with id %d not found", id)
+		}
+		return presenter.UserResponse{}, status.Errorf(codes.Internal, "failed to get user: %v", err)
+	}
+	return *user.ToPresenter(), nil
 }
