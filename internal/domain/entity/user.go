@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"github.com/Temisaputra/warOnk/delivery/presenter"
+	"github.com/Temisaputra/warOnk/internal/delivery/presenter"
 )
 
 type Users struct {

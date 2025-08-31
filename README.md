@@ -1,159 +1,172 @@
-# War-Onk Service
+# WarOnk Backend (Go + gRPC + REST)
 
-A clean-architecture Go project for managing products and other modules with GORM, PostgreSQL, and Swagger API documentation.
-
----
-
-## Table of Contents
-
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Running the Application](#running-the-application)
-- [Database Migration](#database-migration)
-- [Swagger Documentation](#swagger-documentation)
-- [Generating Mocks](#generating-mocks)
-- [Project Structure](#project-structure)
+Project ini menggunakan **Clean Architecture** dengan implementasi **REST API** dan **gRPC**.
 
 ---
 
-## Prerequisites
+## 📂 Struktur Folder
 
-- Go 1.21+
-- PostgreSQL 14+
-- `mockgen` for generating Go mocks
-- `make` for running predefined tasks
-
----
-
-## Installation
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/yourusername/war-onk.git
-cd war-onk
+```
+internal/
+│── delivery/
+│   ├── grpc/            # Handler gRPC
+│   ├── rest/            # Handler REST API
+│   └── presenter/       # Response DTO / presenter
+│
+│── domain/
+│   ├── entity/          # Struct entity domain
+│   ├── repository/      # Interface repository
+│   └── usecase/         # Business logic (use cases)
+│
+│── repository/
+│   ├── db/              # Implementasi repository (DB)
+│   └── transaction/     # Manajemen transaksi DB
+│
+│── infrastructure/
+│   ├── config/          # Konfigurasi project (env, dsb)
+│   ├── database/        # Inisialisasi koneksi database
+│
+│── proto/               # File .proto untuk gRPC
+│── cmd/                 # Entry point aplikasi
+│   └── main.go
 ```
 
-2. Install dependencies:
+---
+
+## 🚀 Cara Menjalankan
+
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/Temisaputra/warOnk.git
+cd warOnk
+```
+
+### 2. Install Dependencies
 
 ```bash
 go mod tidy
 ```
 
-3. Configure environment variables (e.g., `.env`) for database connection.
+### 3. Setup Database
 
----
+Buat database baru, lalu sesuaikan konfigurasi di file:
 
-## Running the Application
-
-To start the REST API server:
-
-```bash
-go run main.go rest
+```
+internal/infrastructure/config/config.go
 ```
 
-The server will start on `http://localhost:8085`.
+### 4. Generate gRPC Code
 
----
-
-## Database Migration
-
-Run migrations using the CLI commands:
-
-- **Migrate Up**:
+Jika ada perubahan di file `.proto`:
 
 ```bash
-go run main.go migrate up
+protoc --go_out=. --go-grpc_out=. proto/*.proto
 ```
 
-- **Migrate Down**:
+### 5. Run gRPC Server
 
 ```bash
-go run main.go migrate down
-```
-
-- **Fresh Migration**:
-
-```bash
-go run main.go migrate fresh
+go run cmd/main.go grpc
 ```
 
 ---
 
-## Swagger Documentation
+## 📌 Catatan
 
-After starting the server, access the Swagger UI at:
-
-```
-http://localhost:8085/swagger/index.html
-```
-
-Use this to explore all endpoints including:
-
-- Product Create
-- Product Get All
-- Product Get By ID
-- Product Update
-- Product Delete
+- `internal/domain` adalah **core business logic**.
+- `internal/repository` adalah implementasi akses data.
+- `internal/delivery` adalah interface untuk komunikasi (gRPC).
+- `internal/infrastructure` adalah konfigurasi teknis.
 
 ---
 
-## Generating Mocks
+## 🛠 Tools
 
-For unit testing, generate mocks using:
+- **Go 1.22+**
+- **gRPC**
+- **PostgreSQL**
+- **GORM**
+- **Protobuf Compiler**
+
+# gRPC + Envoy Setup
+
+## Cara Menjalankan
+
+1. Build dan jalankan Docker Compose:
+
+   ```bash
+   docker-compose up --build
+   ```
+
+2. Service yang tersedia:
+   - gRPC Service → `localhost:50051`
+   - Envoy Proxy (gRPC-Web) → `localhost:8081`
+   - Envoy Admin → `localhost:9901`
+
+## Testing dari Client
+
+### 1. Install grpcurl
+
+Untuk mengetes gRPC dari terminal:
 
 ```bash
-mockgen -source=internal/repository/product_repository.go -destination=./shared/mock/repository/repository_mock.go -package repository
+# MacOS / Linux (Homebrew)
+brew install grpcurl
+
+# Ubuntu/Debian
+sudo apt-get install grpcurl
 ```
 
-You can also add a Makefile target for convenience:
-
-```makefile
-generate-mocks:
-	mockgen -source=internal/repository/product_repository.go -destination=./shared/mock/repository/repository_mock.go -package repository
-```
-
-Run with:
+### 2. Testing gRPC langsung ke service
 
 ```bash
-make generate-mocks
+grpcurl -plaintext localhost:50051 list
 ```
 
----
-
-## Project Structure
-
-```
-├── cmd/              # CLI commands
-├── delivery/         # HTTP handlers, presenters, requests/responses
-├── domain/           # Business entities and interfaces
-├── db/               # Database implementation and repositories
-├── internal/         # Internal packages
-├── shared/mock/      # Generated mocks for testing
-├── main.go           # Entry point
-```
-
-- **Repositories**: Handle DB transactions (optional, panic-safe).
-- **Usecases**: Business logic. Use `WithTransaction(ctx, func(txCtx) error)` for atomic multi-repo operations.
-- **Delivery**: REST API handlers with Swagger annotations.
-
----
-
-## Testing
-
-Run unit tests:
+### 3. Testing gRPC melalui Envoy (gRPC-Web)
 
 ```bash
-go test ./... -v
+grpcurl -plaintext -proto proto/user.proto -d '{"id": "123"}' localhost:8081 user.UserService/GetUser
 ```
 
-- Use GoMock for repository interfaces
-- Use Convey for BDD-style testing
+### 4. Testing via Web Browser (opsional)
+
+Bisa gunakan gRPC-Web client di React/Vue dengan konfigurasi endpoint ke `http://localhost:8081`.
 
 ---
 
-## Notes
+## gRPC Testing
 
-- Transactions are optional and panic-safe.
-- Supports multi-repository transactional operations.
-- Error handling uses custom `TxError` type to distinguish commit, rollback, and operation errors.
+### 1. Using grpcurl (without TLS)
+
+```bash
+grpcurl -plaintext localhost:50051 list
+grpcurl -plaintext -d '{"id": "1"}' localhost:50051 user.UserService/GetUser
+```
+
+### 2. Example gRPC Request (GetUser)
+
+```bash
+grpcurl -plaintext -d '{"id": "123"}' localhost:50051 user.UserService/GetUser
+```
+
+Expected response:
+
+```json
+{
+  "id": "123",
+  "name": "Temi Saputra",
+  "email": "temi@example.com"
+}
+```
+
+### Generate gRPC Client (Frontend)
+
+Jalankan perintah berikut untuk generate client di sisi frontend (gRPC-Web):
+
+```bash
+protoc -I=./proto   proto/user.proto   --js_out=import_style=commonjs:./frontend   --grpc-web_out=import_style=commonjs,mode=grpcwebtext:./frontend
+```
+
+Selamat mencoba 🚀

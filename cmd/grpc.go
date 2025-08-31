@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	grpcDelivery "github.com/Temisaputra/warOnk/delivery/grpc"
-	"github.com/Temisaputra/warOnk/delivery/middleware"
+	grpcDelivery "github.com/Temisaputra/warOnk/internal/delivery/grpc"
+	"github.com/Temisaputra/warOnk/internal/delivery/middleware"
 	repository "github.com/Temisaputra/warOnk/internal/infrastructure/db"
 	"github.com/Temisaputra/warOnk/internal/usecase"
 	"github.com/Temisaputra/warOnk/pb/userpb"

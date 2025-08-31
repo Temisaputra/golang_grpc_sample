@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 
-	"github.com/Temisaputra/warOnk/delivery/presenter"
+	"github.com/Temisaputra/warOnk/internal/delivery/presenter"
 	"github.com/Temisaputra/warOnk/internal/domain/entity"
 	irepository "github.com/Temisaputra/warOnk/internal/repository"
 	"google.golang.org/grpc/codes"

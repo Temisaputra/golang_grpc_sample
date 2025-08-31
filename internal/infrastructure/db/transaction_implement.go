@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Temisaputra/warOnk/delivery/presenter/response"
+	"github.com/Temisaputra/warOnk/internal/delivery/presenter/response"
 	"gorm.io/gorm"
 )
 

@@ -3,7 +3,7 @@ package grpc
 import (
 	"context"
 
-	"github.com/Temisaputra/warOnk/delivery/presenter"
+	"github.com/Temisaputra/warOnk/internal/delivery/presenter"
 	"github.com/Temisaputra/warOnk/internal/usecase"
 	"github.com/Temisaputra/warOnk/pb/userpb"
 	"google.golang.org/protobuf/types/known/emptypb"
