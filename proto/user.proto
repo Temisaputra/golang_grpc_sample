@@ -34,7 +34,22 @@ message GetUserResponse {
   User user = 1;
 }
 
+message GetAllUserResponse {
+  repeated User users = 1;
+}
+
+message UpdateUserRequest {
+  int32 id = 1;
+  string name = 2;
+  string email = 3;
+  string role = 4;
+  string password = 5;
+}
+
 service UserService {
   rpc CreateUser(CreateUserRequest) returns (google.protobuf.Empty);
-  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc GetUser(GetUserRequest) returns (GetAllUserResponse);
+  rpc GetUserById(GetUserRequest) returns (GetUserResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (google.protobuf.Empty);
+  rpc DeleteUser(GetUserRequest) returns (google.protobuf.Empty);
 }

@@ -18,7 +18,31 @@ func NewUserServiceServer(uc usecase.UserUsecase) *UserServiceServer {
 	return &UserServiceServer{uc: uc}
 }
 
-func (s *UserServiceServer) GetUser(ctx context.Context, req *userpb.GetUserRequest) (*userpb.GetUserResponse, error) {
+func (s *UserServiceServer) GetUser(ctx context.Context, req *userpb.GetUserRequest) (*userpb.GetAllUserResponse, error) {
+	users, err := s.uc.GetAllUsers(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
+func (s *UserServiceServer) CreateUser(ctx context.Context, req *userpb.CreateUserRequest) (*emptypb.Empty, error) {
+	newUser := &presenter.UserRequest{
+		Username: req.Name,
+		Email:    req.Email,
+		Role:     req.Role,
+		Password: req.Password,
+	}
+
+	err := s.uc.CreateUser(ctx, newUser)
+	if err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (s *UserServiceServer) GetUserById(ctx context.Context, req *userpb.GetUserRequest) (*userpb.GetUserResponse, error) {
 	user, err := s.uc.GetById(ctx, req.Id)
 	if err != nil {
 		return nil, err
@@ -35,15 +59,23 @@ func (s *UserServiceServer) GetUser(ctx context.Context, req *userpb.GetUserRequ
 	}, nil
 }
 
-func (s *UserServiceServer) CreateUser(ctx context.Context, req *userpb.CreateUserRequest) (*emptypb.Empty, error) {
-	newUser := &presenter.UserRequest{
+func (s *UserServiceServer) UpdateUser(ctx context.Context, req *userpb.UpdateUserRequest) (*emptypb.Empty, error) {
+	updatedUser := &presenter.UserRequest{
 		Username: req.Name,
 		Email:    req.Email,
 		Role:     req.Role,
 		Password: req.Password,
 	}
 
-	err := s.uc.CreateUser(ctx, newUser)
+	err := s.uc.UpdateUser(ctx, req.Id, updatedUser)
+	if err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (s *UserServiceServer) DeleteUser(ctx context.Context, req *userpb.GetUserRequest) (*emptypb.Empty, error) {
+	err := s.uc.DeleteUser(ctx, req.Id)
 	if err != nil {
 		return nil, err
 	}

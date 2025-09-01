@@ -64,8 +64,3 @@ func startMigrate(migrationType string) {
 		log.Println("✅ migration fresh success")
 	}
 }
-
-// func init() {
-// 	migrateCmd.AddCommand(migrateUpCmd, migrateDownCmd, migrateFreshCmd)
-// 	rootCmd.AddCommand(migrateCmd)
-// }

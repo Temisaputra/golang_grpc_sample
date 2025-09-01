@@ -24,7 +24,7 @@ func NewUserRepo(db *gorm.DB) irepository.UserRepository {
 func (r *UserRepository) GetAllUsers(ctx context.Context) ([]presenter.UserResponse, error) {
 	var users []entity.Users
 	if err := r.db.WithContext(ctx).Find(&users).Error; err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, "failed to get users")
 	}
 	var presenters []presenter.UserResponse
 	for _, user := range users {
@@ -35,29 +35,33 @@ func (r *UserRepository) GetAllUsers(ctx context.Context) ([]presenter.UserRespo
 
 func (r *UserRepository) CreateUser(ctx context.Context, user entity.Users) error {
 	if err := r.Conn(ctx).WithContext(ctx).Model(&entity.Users{}).Create(&user).Error; err != nil {
-		return err
+		return status.Error(codes.Internal, "failed to create user")
 	}
 	return nil
 }
 
 func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (entity.Users, error) {
 	var user entity.Users
-	if err := r.Conn(ctx).WithContext(ctx).Where("email = ?", email).First(&user).Error; err != nil {
-		return entity.Users{}, err
+	err := r.Conn(ctx).WithContext(ctx).Where("email = ?", email).First(&user).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return entity.Users{}, status.Error(codes.NotFound, "user not found")
+		}
+		return entity.Users{}, status.Error(codes.Internal, "failed to get user")
 	}
 	return user, nil
 }
 
 func (r *UserRepository) UpdateUser(ctx context.Context, user entity.Users) error {
 	if err := r.Conn(ctx).WithContext(ctx).Save(user).Error; err != nil {
-		return err
+		return status.Error(codes.Internal, "failed to update user")
 	}
 	return nil
 }
 
-func (r *UserRepository) DeleteUser(ctx context.Context, id int) error {
+func (r *UserRepository) DeleteUser(ctx context.Context, id int32) error {
 	if err := r.Conn(ctx).WithContext(ctx).Delete(&entity.Users{}, id).Error; err != nil {
-		return err
+		return status.Error(codes.Internal, "failed to delete user")
 	}
 	return nil
 }

@@ -13,5 +13,5 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, user entity.Users) error
 	GetUserByEmail(ctx context.Context, email string) (entity.Users, error)
 	UpdateUser(ctx context.Context, user entity.Users) error
-	DeleteUser(ctx context.Context, id int) error
+	DeleteUser(ctx context.Context, id int32) error
 }

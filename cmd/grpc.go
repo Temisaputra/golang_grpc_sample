@@ -71,7 +71,3 @@ var grpcCmd = &cobra.Command{
 		deps.Logger.Info("gRPC server exited properly")
 	},
 }
-
-// func init() {
-// 	rootCmd.AddCommand(grpcCmd)
-// }

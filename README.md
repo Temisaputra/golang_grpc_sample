@@ -10,7 +10,6 @@ Project ini menggunakan **Clean Architecture** dengan implementasi **REST API** 
 internal/
 │── delivery/
 │   ├── grpc/            # Handler gRPC
-│   ├── rest/            # Handler REST API
 │   └── presenter/       # Response DTO / presenter
 │
 │── domain/
@@ -140,9 +139,50 @@ Bisa gunakan gRPC-Web client di React/Vue dengan konfigurasi endpoint ke `http:/
 
 ### 1. Using grpcurl (without TLS)
 
+### List grpc service
+
 ```bash
 grpcurl -plaintext localhost:50051 list
+```
+
+### GET ALL
+
+```bash
 grpcurl -plaintext -d '{"id": "1"}' localhost:50051 user.UserService/GetUser
+```
+
+### GET BY ID
+
+```bash
+grpcurl -plaintext -d '{"id": "7"}' localhost:50051 userpb.UserService/GetUserById
+```
+
+### CREATE USER
+
+```bash
+grpcurl -plaintext -d '{
+  "name": "Hamdi Created",
+  "email": "hamdi.created@gmail.com",
+  "role": "superadmin"
+}' localhost:50051 userpb.UserService/CreateUser
+```
+
+### UPDATE USER
+
+```bash
+grpcurl -plaintext -d '{
+  "id": 7,
+  "name": "Rahman Updated",
+  "email": "rahman.updated@gmail.com",
+  "role": "superadmin"
+}' \
+localhost:50051 userpb.UserService/UpdateUser
+```
+
+### DELETE USER
+
+```bash
+grpcurl -plaintext -d '{"id": 7}' localhost:50051 userpb.UserService/DeleteUser
 ```
 
 ### 2. Example gRPC Request (GetUser)
