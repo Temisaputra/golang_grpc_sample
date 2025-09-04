@@ -1,33 +1,46 @@
 package middleware
 
 import (
-	"log"
-	"net/http"
+	"context"
+	"strings"
 
 	"github.com/Temisaputra/warOnk/pkg/auth"
-	"github.com/Temisaputra/warOnk/pkg/helper"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type AuthMiddleware struct {
 	jwtSvc auth.JwtService
 }
 
+// Constructor middleware
 func NewAuthMiddleware(jwtSvc auth.JwtService) *AuthMiddleware {
 	return &AuthMiddleware{jwtSvc: jwtSvc}
 }
 
-func (a *AuthMiddleware) Authorization(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// UnaryInterceptor untuk validasi JWT di setiap request gRPC
+func (m *AuthMiddleware) UnaryInterceptor(
+	ctx context.Context,
+	req interface{},
+	info *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler,
+) (interface{}, error) {
 
-		user, err := a.jwtSvc.ValidateCurrentUser(r)
-		if err != nil {
-			log.Println("Error validating user:", err)
-			helper.WriteResponse(w, err, nil)
-			return
-		}
+	// ✅ Skip validasi untuk public endpoint (misal Login/Register)
+	if strings.Contains(info.FullMethod, "Login") || strings.Contains(info.FullMethod, "Register") {
+		return handler(ctx, req)
+	}
 
-		// simpan user ke context
-		r = auth.SetUserContext(r, user)
-		next.ServeHTTP(w, r)
-	})
+	// ✅ Validasi token menggunakan service
+	user, err := m.jwtSvc.ValidateCurrentUserGRPC(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Unauthenticated, "unauthorized: %v", err)
+	}
+
+	// ✅ Simpan user ke context supaya bisa dipakai di service
+	ctx = auth.SetUserContextGRPC(ctx, user, "")
+
+	// ✅ Lanjutkan ke handler berikutnya
+	return handler(ctx, req)
 }

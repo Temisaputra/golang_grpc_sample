@@ -5,7 +5,9 @@ import (
 	"time"
 
 	"github.com/Temisaputra/warOnk/internal/infrastructure/config"
+	repository "github.com/Temisaputra/warOnk/internal/infrastructure/db"
 	"github.com/Temisaputra/warOnk/internal/infrastructure/logger"
+	"github.com/Temisaputra/warOnk/pkg/auth"
 	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -13,9 +15,10 @@ import (
 )
 
 type Dependencies struct {
-	DB     *gorm.DB
-	Logger *zap.Logger
-	Cfg    *config.Config
+	DB         *gorm.DB
+	Logger     *zap.Logger
+	Cfg        *config.Config
+	JwtService auth.JwtService
 }
 
 func InitDependencies() *Dependencies {
@@ -45,9 +48,14 @@ func InitDependencies() *Dependencies {
 	sqlDB.SetConnMaxLifetime(time.Minute * time.Duration(cfg.DBMaxLifetime))
 	sqlDB.SetConnMaxIdleTime(time.Minute * time.Duration(cfg.DBMaxIdleTime))
 
+	userRepo := repository.NewUserRepo(db)
+
+	jwtSvc := auth.NewJwtService(*cfg, *log, userRepo)
+
 	return &Dependencies{
-		DB:     db,
-		Logger: log,
-		Cfg:    cfg,
+		DB:         db,
+		Logger:     log,
+		Cfg:        cfg,
+		JwtService: jwtSvc,
 	}
 }

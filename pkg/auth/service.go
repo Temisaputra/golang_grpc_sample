@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/Temisaputra/warOnk/pkg/helper"
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/metadata"
 )
 
 var (
@@ -23,9 +23,10 @@ var (
 	ErrMissingToken = errors.New("missing token")
 )
 
+// JwtService interface untuk semua kebutuhan JWT
 type JwtService interface {
 	GenerateToken(user *entity.Users) (string, error)
-	ValidateCurrentUser(r *http.Request) (*entity.Users, error)
+	ValidateCurrentUserGRPC(ctx context.Context) (*entity.Users, error)
 }
 
 type jwtService struct {
@@ -35,14 +36,14 @@ type jwtService struct {
 }
 
 // context key type biar aman tidak tabrakan
-type UserContextKey string
-type JWTContextKey string
+type contextKey string
 
 const (
-	UserContext UserContextKey = "USER_CONTEXT_KEY"
-	JWTContext  JWTContextKey  = "JWT_CONTEXT_KEY"
+	UserContextKey contextKey = "USER_CONTEXT_KEY"
+	JWTContextKey  contextKey = "JWT_CONTEXT_KEY"
 )
 
+// Constructor
 func NewJwtService(cfg config.Config, log zap.Logger, userRepo repository.UserRepository) JwtService {
 	return &jwtService{
 		cfg:      cfg,
@@ -60,7 +61,10 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-// GenerateToken bikin token baru untuk user
+//////////////////////////////////////////////////////
+// GENERATE TOKEN
+//////////////////////////////////////////////////////
+
 func (s *jwtService) GenerateToken(user *entity.Users) (string, error) {
 	expirationTime := time.Now().Add(time.Hour * 1) // expired 1 jam
 	claims := &Claims{
@@ -79,13 +83,29 @@ func (s *jwtService) GenerateToken(user *entity.Users) (string, error) {
 	return token.SignedString([]byte(s.cfg.JWTSecret))
 }
 
-// ValidateCurrentUser validasi JWT dari header Authorization
-func (s *jwtService) ValidateCurrentUser(r *http.Request) (*entity.Users, error) {
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		return nil, helper.NewErrUnauthorized("missing token")
+//////////////////////////////////////////////////////
+// VALIDASI JWT UNTUK GRPC
+//////////////////////////////////////////////////////
+
+func (s *jwtService) ValidateCurrentUserGRPC(ctx context.Context) (*entity.Users, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, ErrMissingToken
 	}
 
+	authHeader := md.Get("authorization")
+	if len(authHeader) == 0 {
+		return nil, ErrMissingToken
+	}
+
+	return s.validateToken(authHeader[0])
+}
+
+//////////////////////////////////////////////////////
+// FUNGSI GENERIK VALIDASI TOKEN
+//////////////////////////////////////////////////////
+
+func (s *jwtService) validateToken(authHeader string) (*entity.Users, error) {
 	parts := strings.Fields(authHeader)
 	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
 		return nil, helper.NewErrUnauthorized("invalid token format")
@@ -94,7 +114,6 @@ func (s *jwtService) ValidateCurrentUser(r *http.Request) (*entity.Users, error)
 	tokenString := parts[1]
 	claims := &Claims{}
 
-	// Parse token sesuai JWT v5
 	_, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
@@ -102,7 +121,6 @@ func (s *jwtService) ValidateCurrentUser(r *http.Request) (*entity.Users, error)
 		return []byte(s.cfg.JWTSecret), nil
 	})
 
-	// Tangani error expired secara spesifik
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			return nil, helper.NewErrUnauthorized("token expired")
@@ -110,7 +128,6 @@ func (s *jwtService) ValidateCurrentUser(r *http.Request) (*entity.Users, error)
 		return nil, helper.NewErrUnauthorized("invalid token")
 	}
 
-	// Optional check (claims.ExpiresAt biasanya dicek oleh JWT lib)
 	if claims.ExpiresAt != nil && claims.ExpiresAt.Before(time.Now()) {
 		return nil, helper.NewErrUnauthorized("token expired")
 	}
@@ -126,16 +143,19 @@ func (s *jwtService) ValidateCurrentUser(r *http.Request) (*entity.Users, error)
 	return user, nil
 }
 
-// SetUserContext masukkan user & jwt token ke dalam context
-func SetUserContext(r *http.Request, user *entity.Users) *http.Request {
-	ctx := r.Context()
-	ctx = context.WithValue(ctx, UserContext, user)
-	ctx = context.WithValue(ctx, JWTContext, r.Header.Get("Authorization"))
-	return r.WithContext(ctx)
+//////////////////////////////////////////////////////
+// CONTEXT HANDLER GRPC
+//////////////////////////////////////////////////////
+
+// SetUserContextGRPC masukkan user ke dalam context gRPC
+func SetUserContextGRPC(ctx context.Context, user *entity.Users, token string) context.Context {
+	ctx = context.WithValue(ctx, UserContextKey, user)
+	ctx = context.WithValue(ctx, JWTContextKey, token)
+	return ctx
 }
 
 func GetUserContext(ctx context.Context) *entity.Users {
-	user, ok := ctx.Value(UserContext).(*entity.Users)
+	user, ok := ctx.Value(UserContextKey).(*entity.Users)
 	if !ok {
 		return nil
 	}
@@ -143,6 +163,6 @@ func GetUserContext(ctx context.Context) *entity.Users {
 }
 
 func GetJWTContext(ctx context.Context) string {
-	token, _ := ctx.Value(JWTContext).(string)
+	token, _ := ctx.Value(JWTContextKey).(string)
 	return token
 }
