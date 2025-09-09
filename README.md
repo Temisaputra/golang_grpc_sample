@@ -137,7 +137,7 @@ Bisa gunakan gRPC-Web client di React/Vue dengan konfigurasi endpoint ke `http:/
 
 ## gRPC Testing
 
-### 1. Using grpcurl (without TLS)
+### Using grpcurl (without TLS)
 
 ### List grpc service
 
@@ -145,60 +145,63 @@ Bisa gunakan gRPC-Web client di React/Vue dengan konfigurasi endpoint ke `http:/
 grpcurl -plaintext localhost:50051 list
 ```
 
+### REGISTER
+
+```bash
+grpcurl -plaintext -d '{
+      "name": "Hamdi Created",
+      "email": "hamdi.created@gmail.com",
+      "role": "superadmin",
+      "password": "12345678"
+}' localhost:50051 authpb.AuthService/Register
+```
+
+### LOGIN
+
+```bash
+grpcurl -plaintext -d '{
+      "email": "hamdi.created@gmail.com",
+      "password": "12345678"
+}' localhost:50051 authpb.AuthService/Login
+```
+
 ### GET ALL
 
 ```bash
-grpcurl -plaintext -d '{"id": "1"}' localhost:50051 user.UserService/GetUser
+grpcurl -plaintext \ -H "authorization: Bearer <TOKEN_KAMU>" \ -d '{"id": "1"}' \ localhost:50051 userpb.UserService/GetUser
 ```
 
 ### GET BY ID
 
 ```bash
-grpcurl -plaintext -d '{"id": "7"}' localhost:50051 userpb.UserService/GetUserById
+grpcurl -plaintext \ -H "authorization: Bearer <TOKEN_KAMU>" \ -d '{"id": "7"}' \ localhost:50051 userpb.UserService/GetUserById
 ```
 
 ### CREATE USER
 
 ```bash
-grpcurl -plaintext -d '{
-  "name": "Hamdi Created",
-  "email": "hamdi.created@gmail.com",
-  "role": "superadmin"
-}' localhost:50051 userpb.UserService/CreateUser
+grpcurl -plaintext \ -H "authorization: Bearer <TOKEN_KAMU>" \ -d '{
+    "name": "Hamdi Created",
+    "email": "hamdi.created@gmail.com",
+    "role": "superadmin"
+  }' \ localhost:50051 userpb.UserService/CreateUser
 ```
 
 ### UPDATE USER
 
 ```bash
-grpcurl -plaintext -d '{
-  "id": 7,
-  "name": "Rahman Updated",
-  "email": "rahman.updated@gmail.com",
-  "role": "superadmin"
-}' \
-localhost:50051 userpb.UserService/UpdateUser
+grpcurl -plaintext \ -H "authorization: Bearer <TOKEN_KAMU>" \ -d '{
+    "id": 7,
+    "name": "Rahman Updated",
+    "email": "rahman.updated@gmail.com",
+    "role": "superadmin"
+  }' \ localhost:50051 userpb.UserService/UpdateUser
 ```
 
 ### DELETE USER
 
 ```bash
-grpcurl -plaintext -d '{"id": 7}' localhost:50051 userpb.UserService/DeleteUser
-```
-
-### 2. Example gRPC Request (GetUser)
-
-```bash
-grpcurl -plaintext -d '{"id": "123"}' localhost:50051 user.UserService/GetUser
-```
-
-Expected response:
-
-```json
-{
-  "id": "123",
-  "name": "Temi Saputra",
-  "email": "temi@example.com"
-}
+grpcurl -plaintext \ -H "authorization: Bearer <TOKEN_KAMU>" \ -d '{"id": 7}' \ localhost:50051 userpb.UserService/DeleteUser
 ```
 
 ### Generate gRPC Client (Frontend)

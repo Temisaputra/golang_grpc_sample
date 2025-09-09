@@ -11,6 +11,7 @@ import (
 	"github.com/Temisaputra/warOnk/internal/delivery/middleware"
 	repository "github.com/Temisaputra/warOnk/internal/infrastructure/db"
 	"github.com/Temisaputra/warOnk/internal/usecase"
+	"github.com/Temisaputra/warOnk/pb/authpb"
 	"github.com/Temisaputra/warOnk/pb/userpb"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -31,13 +32,16 @@ var grpcCmd = &cobra.Command{
 
 		// Repositories
 		userRepo := repository.NewUserRepo(deps.DB)
+		authRepo := repository.NewAuthRepo(deps.DB)
 		transactionRepo := repository.NewTransactionRepo(deps.DB)
 
 		// Usecases
 		userUC := usecase.NewUserUsecase(userRepo, transactionRepo)
+		authUC := usecase.NewAuthUsecase(authRepo, userRepo, transactionRepo, deps.JwtService)
 
 		// Delivery layer
 		userService := grpcDelivery.NewUserServiceServer(*userUC) // alias delivery/grpc
+		authService := grpcDelivery.NewAuthServiceServer(*authUC)
 
 		// Start gRPC server
 		addr := fmt.Sprintf(":%s", deps.Cfg.GRPCPort)
@@ -46,9 +50,17 @@ var grpcCmd = &cobra.Command{
 			deps.Logger.Fatal("failed to listen", zap.Error(err))
 		}
 
+		jwtMiddleware := middleware.NewAuthMiddleware(deps.JwtService)
 		// Register gRPC services
-		s := grpc.NewServer(grpc.UnaryInterceptor(middleware.GRPCLoggingInterceptor(deps.Logger, deps.Cfg)))
+		s := grpc.NewServer(
+			grpc.ChainUnaryInterceptor(
+				jwtMiddleware.UnaryInterceptor, // <-- Middleware JWT
+				middleware.GRPCLoggingInterceptor(deps.Logger, deps.Cfg),
+			),
+		)
+
 		userpb.RegisterUserServiceServer(s, userService)
+		authpb.RegisterAuthServiceServer(s, authService)
 
 		// Enable reflection
 		reflection.Register(s)
